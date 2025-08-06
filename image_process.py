@@ -14,8 +14,8 @@ def remake_image_L(image_path):
     image_lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
     L_channel = image_lab[:, :, 0]
     return L_channel
-# Bước 2: Phân cụm ảnh L bằng FCM
-def fcm_segmentation(L_channel, n_clusters=3):
+# Bước 2: Phân cụm ảnh L bằng FCM và visualize kết quả
+def fcm_segmentation(L_channel, n_clusters=3, visualize=True):
     # 1. Reshape ảnh L thành vector 1D
     data = L_channel.reshape(-1, 1).T.astype(np.float64)  # shape: (1, N)
 
@@ -29,7 +29,6 @@ def fcm_segmentation(L_channel, n_clusters=3):
     cluster_labels_img = cluster_labels.reshape(L_channel.shape)
 
     # 5. Tìm cụm tương ứng với lá (thường là cụm có diện tích lớn nhất ở giữa ảnh)
-    # → Ta sẽ chọn cụm có số lượng pixel lớn nhất trong phần trung tâm ảnh
     h, w = L_channel.shape
     center_mask = np.zeros_like(L_channel, dtype=np.uint8)
     center_mask[h//4:3*h//4, w//4:3*w//4] = 1
@@ -41,6 +40,27 @@ def fcm_segmentation(L_channel, n_clusters=3):
 
     # 6. Tạo mask nhị phân
     mask_leaf = (cluster_labels_img == leaf_cluster).astype(np.uint8)
+
+    # 7. Visualize nếu cần
+    if visualize:
+        plt.figure(figsize=(12, 4))
+        plt.subplot(1, 3, 1)
+        plt.imshow(L_channel, cmap='gray')
+        plt.title('Ảnh L (gốc)')
+        plt.axis('off')
+
+        plt.subplot(1, 3, 2)
+        plt.imshow(cluster_labels_img, cmap='jet')
+        plt.title('Ảnh sau phân cụm FCM')
+        plt.axis('off')
+
+        plt.subplot(1, 3, 3)
+        plt.imshow(mask_leaf, cmap='gray')
+        plt.title('Mask lá cây')
+        plt.axis('off')
+
+        plt.tight_layout()
+        plt.show()
 
     return mask_leaf
 # Bước 3: Thay nền bằng màu xám và hiển thị ảnh kết quả
